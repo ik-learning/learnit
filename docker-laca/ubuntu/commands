@@ -1,0 +1,7 @@
+docker logs testweb
+
+docker stop testweb
+
+docker rm testweb
+docker container run -d --name testweb httpd
+tail -f /var/log/messages

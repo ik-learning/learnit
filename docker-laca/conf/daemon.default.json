@@ -1,0 +1,4 @@
+{
+  "debug": false,
+  "storage-driver": "overlay2"
+}

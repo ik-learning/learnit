@@ -5,6 +5,8 @@ apt-get update \
         ca-certificates \
         curl \
         software-properties-common \
+        telnet \
+        elinks \
     && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - \
     && add-apt-repository \
         "deb https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") \
@@ -20,3 +22,5 @@ usermod -aG docker vagrant
 
 systemctl start docker
 apt-get autoremove -y
+
+docker rm $(docker ps -a -q)

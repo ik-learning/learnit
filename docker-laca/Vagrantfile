@@ -7,7 +7,6 @@ NUM_NODE = 1
 
 IP_NW = "192.168.5.56"
 
-
 Vagrant.configure("2") do |config|
 
   config.vm.box = "ubuntu/bionic64"
@@ -25,7 +24,9 @@ Vagrant.configure("2") do |config|
         node.vm.network :private_network, ip: IP_NW
         node.vm.network "forwarded_port", guest: 22, host: "#{2720 + i}"
         node.vm.provision "install-docker", type: "shell", :path => "ubuntu/install-docker.sh"
-        node.vm.provision "test-docker", type: "shell", :path => "ubuntu/test-docker.sh"
+        node.vm.provision "syslog", type: "shell", :path => "ubuntu/syslog.sh", privileged: true, run: "always"
+        node.vm.provision "docker-daemon", type: "shell", :path => "ubuntu/docker-daemon.sh", run: "always"
+        node.vm.provision "docker-test", type: "shell", :path => "ubuntu/docker-test.sh"
       end
   end
 end
