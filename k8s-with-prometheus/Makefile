@@ -21,3 +21,8 @@ kube-stop: ## Stop Minikube cluster
 kube-docker: ## Setup Minikube Docker
 	@eval $(minikube docker-env)
 
+infra-prometheus: ## Deploy prometheus infrastucture
+	@kubectl apply -f ./infrastructure/prometheus/namespaces.yml
+	@kubectl apply -f ./infrastructure/prometheus/prometheus-config-map.yml
+	@kubectl apply -f ./infrastructure/prometheus/deployment.yml
+	@kubectl apply -f ./infrastructure/prometheus/service.yml
