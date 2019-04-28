@@ -22,5 +22,5 @@ usermod -aG docker vagrant
 
 systemctl start docker
 apt-get autoremove -y
-
-docker rm $(docker ps -a -q)
+sleep 2
+# docker rm $(docker ps -a -q)
