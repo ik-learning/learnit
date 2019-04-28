@@ -23,5 +23,5 @@ docker service ls
 
 Backuup SWARM
 ```
-
+copy /var/lib/docker/swarm
 ```

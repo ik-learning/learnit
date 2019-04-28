@@ -2,12 +2,10 @@
 
 set -euo pipefail
 
-
 echo "============================="
 echo "== SWARM WORKER JOIN SWARM =="
 echo "============================="
 
-set -x
 instance_ip="$1"
 token="$2"
 manager_ip="$3"

@@ -7,7 +7,7 @@ NUM_MANAGER_NODE = 1
 MANAGER_IP = "192.168.5.2"
 IP_RANGE="192.168.5"
 NUM_WORKERS = 2
-VM_MEMORY = 512
+VM_MEMORY = 2048
 NUM_CPU = 1
 
 instances = []
@@ -15,41 +15,69 @@ instances = []
 (1..NUM_WORKERS).each do |n|
   instances.push({:name => "worker-#{n}", :ip => "192.168.10.#{n*2 + 3}", :num => "#{n}"})
 end
-
+# add ucp and dtr nodes
 File.open("./conf/hosts", 'w') { |file|
+  file.write("#{MANAGER_IP} manager\n")
+  file.write("#{MANAGER_IP} ucp.example\n")
   instances.each do |i|
     file.write("#{i[:ip]} #{i[:name]} #{i[:name]}\n")
+    if "#{i[:name]}" == "worker-1"
+      file.write("#{i[:ip]} dtr.example\n")
+    end
   end
 }
 
 Vagrant.configure("2") do |config|
-
   config.vm.box = "ubuntu/bionic64"
   config.vm.box_check_update = false
+
+  if Vagrant.has_plugin? 'vagrant-hostmanager'
+    config.hostmanager.enabled = true
+  else
+    msg = "vagrant-hostmanager missing, please install the plugin with this command:"
+    msg << "\nvagrant plugin install vagrant-hostmanager"
+    raise msg
+  end
+
+  if Vagrant.has_plugin?('vagrant-cachier')
+    config.cache.scope = :machine
+  end
 
   config.vm.provider "virtualbox" do |v|
     v.memory = VM_MEMORY
     v.cpus = NUM_CPU
+    v.linked_clone = true
   end
 
   (1..NUM_MANAGER_NODE).each do |i|
     config.vm.define "manager" do |node|
       node.vm.hostname = 'manager'
+
+      node.hostmanager.manage_host = true
+      node.hostmanager.manage_guest = true
+      node.hostmanager.ignore_private_ip = false
+      node.hostmanager.aliases = %w(manager.example ucp.example ucp swarm-manager)
+
       node.vm.provider "virtualbox" do |vb|
+          vb.memory = 2048
           vb.name = "swarm-manager"
-          vb.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+          vb.customize ["modifyvm", :id, "--cpuexecutioncap", "100"]
       end
       node.vm.network :private_network, ip: "#{MANAGER_IP}"
-      node.vm.network "forwarded_port", guest: 22, host: "#{2720 + i}"
-      node.vm.provision "install-docker", type: "shell", :path => "ubuntu/install-docker.sh"
-      node.vm.provision "docker-daemon", type: "shell", :path => "ubuntu/docker-daemon.sh"
-      node.vm.provision "docker-test", type: "shell", :path => "ubuntu/docker-test.sh"
-      if File.file?("./conf/hosts")
-        node.vm.provision "file", source: "./conf/hosts", destination: "/tmp/hosts"
-        node.vm.provision "shell", inline: "cat /tmp/hosts >> /etc/hosts", privileged: true
-      end
-      node.vm.provision "shell", inline: "docker swarm init --advertise-addr #{MANAGER_IP}"
-      node.vm.provision "shell", inline: "docker swarm join-token -q worker > /vagrant/conf/token"
+      node.vm.network :forwarded_port, guest: 22, host: "#{2720 + i}"
+      node.vm.provision "install-docker", type: "shell", :path => "ubuntu/install-docker.sh", run: "once"
+      node.vm.provision "docker-daemon", type: "shell", :path => "ubuntu/docker-daemon.sh", run: "once"
+      node.vm.provision "docker-test", type: "shell", :path => "ubuntu/docker-test.sh", run: "once"
+      # if File.file?("./conf/hosts")
+      #   node.vm.provision "file", source: "./conf/hosts", destination: "/tmp/hosts", run: "once"
+      #   node.vm.provision "shell", inline: "cat /tmp/hosts >> /etc/hosts", privileged: true, run: "once"
+      # end
+      node.vm.provision "shell", inline: "docker swarm init --advertise-addr #{MANAGER_IP}", run: 'once'
+      node.vm.provision "shell", inline: "docker swarm join-token -q worker > /vagrant/conf/token", run: 'once'
+      node.vm.provision 'shell', path: 'ubuntu/install-ucp.sh',
+        args: [MANAGER_IP, "/vagrant/conf/docker_subscription.lic"],
+        privileged: true,
+        run: 'once'
     end
   end
 
@@ -60,22 +88,30 @@ Vagrant.configure("2") do |config|
       ip = "#{instance[:ip]}"
       token = "/vagrant/conf/token"
       node.vm.hostname = instance[:name]
+
+      node.hostmanager.manage_host = true
+      node.hostmanager.manage_guest = true
+      node.hostmanager.ignore_private_ip = false
+      if instance[:name] == 'worker-1'
+        node.hostmanager.aliases = ["#{instance[:name]}", "dtr", "dtr.example", "dtr.worker-1"]
+      else
+        node.hostmanager.aliases = instance[:name]
+      end
+
       node.vm.provider "virtualbox" do |vb|
           vb.name = instance[:name]
           vb.customize ["modifyvm", :id, "--cpuexecutioncap", "100"]
       end
+
       node.vm.network :private_network, ip: "#{instance[:ip]}"
       node.vm.network "forwarded_port", guest: 22, host: ssh_forward
-      node.vm.provision "install-docker", type: "shell", :path => "ubuntu/install-docker.sh"
-      node.vm.provision "docker-daemon", type: "shell", :path => "ubuntu/docker-daemon.sh"
-      node.vm.provision "docker-test", type: "shell", :path => "ubuntu/docker-test.sh"
-      if File.file?("./conf/hosts")
-        node.vm.provision "file", source: "./conf/hosts", destination: "/tmp/hosts"
-        node.vm.provision "shell", inline: "cat /tmp/hosts >> /etc/hosts", privileged: true
-      end
+      node.vm.provision "install-docker", type: "shell", :path => "ubuntu/install-docker.sh", run: "once"
+      node.vm.provision "docker-daemon", type: "shell", :path => "ubuntu/docker-daemon.sh", run: "once"
+      node.vm.provision "docker-test", type: "shell", :path => "ubuntu/docker-test.sh", run: "once"
       node.vm.provision 'shell', path: 'ubuntu/worker-join.sh',
         args: [ip, token, MANAGER_IP],
-        privileged: true
+        privileged: true,
+        run: 'once'
     end
   end
 

@@ -128,3 +128,7 @@ override.tf.json
 *.box
 
 # End of https://www.gitignore.io/api/node,vagrant,terraform
+
+
+**/docker_subscription.lic
+.DS_Store
