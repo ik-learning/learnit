@@ -68,16 +68,12 @@ Vagrant.configure("2") do |config|
       node.vm.provision "install-docker", type: "shell", :path => "ubuntu/install-docker.sh", run: "once"
       node.vm.provision "docker-daemon", type: "shell", :path => "ubuntu/docker-daemon.sh", run: "once"
       node.vm.provision "docker-test", type: "shell", :path => "ubuntu/docker-test.sh", run: "once"
-      # if File.file?("./conf/hosts")
-      #   node.vm.provision "file", source: "./conf/hosts", destination: "/tmp/hosts", run: "once"
-      #   node.vm.provision "shell", inline: "cat /tmp/hosts >> /etc/hosts", privileged: true, run: "once"
-      # end
       node.vm.provision "shell", inline: "docker swarm init --advertise-addr #{MANAGER_IP}", run: 'once'
       node.vm.provision "shell", inline: "docker swarm join-token -q worker > /vagrant/conf/token", run: 'once'
-      node.vm.provision 'shell', path: 'ubuntu/install-ucp.sh',
-        args: [MANAGER_IP, "/vagrant/conf/docker_subscription.lic"],
-        privileged: true,
-        run: 'once'
+      # node.vm.provision 'shell', path: 'ubuntu/install-ucp.sh',
+      #   args: [MANAGER_IP, "/vagrant/conf/docker_subscription.lic"],
+      #   privileged: true,
+      #   run: 'once'
     end
   end
 

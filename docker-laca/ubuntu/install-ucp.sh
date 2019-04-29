@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "=========================================="
-echo "== SWARM UNIVERSL CONTROL PLANE INSTALL =="
+echo "== SWARM UNIVERSaL CONTROL PLANE INSTALL =="
 echo "=========================================="
 
 varion="3.1.6"
