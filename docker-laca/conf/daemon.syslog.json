@@ -1,8 +1,0 @@
-{
-  "debug": false,
-  "storage-driver": "overlay2",
-  "log-driver": "syslog",
-  "log-opts": {
-    "syslog-address": "udp://10.0.2.15:514"
-  }
-}
