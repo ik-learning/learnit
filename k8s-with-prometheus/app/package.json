@@ -19,7 +19,7 @@
 		"pug": "3.0.1",
 		"response-time": "^2.3.2",
 		"serve-favicon": "~2.5.0",
-		"swagger-stats": "^0.95.6"
+		"swagger-stats": "^0.99.0"
 	},
 	"author": "IvavKa",
 	"license": "ISC"
